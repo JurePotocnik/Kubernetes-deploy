@@ -160,11 +160,43 @@ basicly you need local account for it.
 
 
 ## Install kubernetes
-Soo finaly the kubernetes. On simple solution to give you a headache. Kubernetes is... Still working on it :) 
+Soo finaly the kubernetes. On simple solution to give you a headache. Kubernetes is a "docker image for controlling other dockers". Not. But Yes. It has one master server who is connected to multiple nodees which are running different docker images. 
+Let's first install docker master. 
+```
+sudo apt-get update && apt-get install -y apt-transport-https
+sudo curl -s https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+sudo apt update && apt install -qy docker-ce
+sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+sudo echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" \
+    > /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update && apt-get install -y kubeadm kubelet kubectl
+```
 
+You need to install this kubeadm/kubelet and kubectl on every node you want to have. But for now you don't need this. You can install it later.
 
+To create the master for the kubernetes run command like this:
+```
+sudo kubeadm init --apiserver-advertise-address=192.168.5.135
+```
+For apiserver pust your IP of the server. After a while you will get join command. Please copy it to somewhere or if you lose it run this command to print it again:
+```
+kubeadm token create --print-join-command
+```
 
+Now we have running kubernetes. To be able to communicate with it you need to set your private config:
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
 
+#### Install the nodes
+Nodes are just simple servers who will run the image which kubernetes told them to.
+Install all necessary libraries and then run the join command from command above:
+```
+kubeadm join 192.168.5.135:6443 --token psncol.ghljaklsjdhfsjfbn --discovery-token-ca-cert-hash sha256:85835a9d6faf06eljdfgkljdfklfgsdnlajsd6eb32c0d83ba193b181ac07d6
+```
 
-
+WIP. how to configure network etc
 
