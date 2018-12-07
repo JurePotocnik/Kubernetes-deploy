@@ -87,3 +87,84 @@ docker ps -a
 docker rm ImageName -f (-f is for force)
 docker run ubuntu:18.04 
 ```
+
+### Create test docker image for mongo nginx and php fpm
+```
+FROM ubuntu:18.04
+
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install -y vim software-properties-common
+RUN add-apt-repository ppa:ondrej/php -y
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y php7.2 php7.2-cli  php7.2-fpm php7.2-dev php7.2-xml libcurl3-openssl-dev autoconf pkg-config libssl-dev nginx git
+RUN pecl install mongodb-1.5.3
+
+
+COPY ./nginxconfig.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+RUN echo "extension=mongodb.so" >> /etc/php/7.2/fpm/php.ini
+RUN echo "extension=mongodb.so" >> /etc/php/7.2/cli/php.ini
+
+RUN update-rc.d nginx enable
+RUN update-rc.d php7.2-fpm enable
+
+
+WORKDIR /var/www/
+
+COPY ./data/ /var/www/
+RUN php composer.phar update
+
+CMD /etc/init.d/nginx start && \ 
+	/etc/init.d/php7.2-fpm start && tail -f /dev/null
+```
+
+What it does:
+ - Install ubuntu
+ - Upgrade OS
+ - Add php 7.2 repository (7.3 its not working in kubernetes :) )
+ - Install php, fpm, nginx, git,..
+ - From working directory copy config file to docker image 
+ - Enable mongo drive in PHP
+ - add nginx and fpm on startup
+ - Set working dir as /var/www
+ - Copy data from working directory to /var/www in docker
+ - run php composer
+ - start all service and keep it running (tail -f /dev/null)
+   - In kubernetes the worker just shutted down my node because it thought it's done with it.  
+
+
+If you want build the image use:
+```
+docker build -t mysuperimage .
+```
+
+To push to your registry:
+```
+docker push dockerhub.superdomain.com/mysuperimage:1
+```
+
+And to run it with mapping port 80 to my 80 port.
+```
+docker run -i  -p 80:80 -i -t mysuperimage:1 /bin/bash
+```
+If you want to can map you own directory to docker:
+```
+ docker run --rm -v c:/work/data:/var/www/ -i  -p 80:80 -i -t dockerhub.superdomain.com/mysuperimage:1 /bin/bash 
+```
+
+Note: If you are running windows there could be some problem if you are using Azure AD.
+Folow this to fix this: https://tomssl.com/2018/01/11/sharing-your-c-drive-with-docker-for-windows-when-using-azure-active-directory-azuread-aad/
+basicly you need local account for it.
+
+
+## Install kubernetes
+Soo finaly the kubernetes. On simple solution to give you a headache. Kubernetes is... Still working on it :) 
+
+
+
+
+
+
+
