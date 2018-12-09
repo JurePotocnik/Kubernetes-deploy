@@ -198,5 +198,85 @@ Install all necessary libraries and then run the join command from command above
 kubeadm join 192.168.5.135:6443 --token psncol.ghljaklsjdhfsjfbn --discovery-token-ca-cert-hash sha256:85835a9d6faf06eljdfgkljdfklfgsdnlajsd6eb32c0d83ba193b181ac07d6
 ```
 
-WIP. how to configure network etc
+To check the valid nodes run command bellow on a master server:
+```
+kubectl get nodes
+```
+
+By now you should see master server and other nodes but the status should be NotReady. To connect all the nodes together you need to install a network plugin. There's a giant list of all avaiable plugin but in this tutorial we will use Weave Net.
+
+To install it run the command on master:
+```
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+```
+
+By now we should have all the nodes ready for the deployment.
+
+#### Deploying the dashboard.
+We have kubernetes, the nodes, registry but we can't see what have we done. In order to see this for noobs only, we have to install the dashboard. In the repo you will find kubernetes-dashboard.yaml file with the configuration to setup dashboard and start on port 9090. Download the file on the master server and run the installation command:
+```
+kubectl apply -f kubernetes-dashboard.yaml
+```
+
+To check if installation works run following command:
+```
+kubectl get pods --all-namespaces
+or
+kubectl get pods --namespace=kube-system
+```
+
+If everything works the dashboard should be available via this url:
+```
+http://<masterIP>:9090
+```
+
+#### Dashboard login
+If you check the yaml file you will see the flag --disable-skip=true by default you can use skip login and go directly to dashboard. For security reasons we have disabled this.
+
+To login via token run command bellow on master server:
+```
+kubectl get secrets --namespace=kube-system | grep dashboard-token
+```
+Copy the full name of the secret and rerun command:
+```
+kubectl -n kube-system describe secret <dashboardName>
+```
+You fill see the token string. This token is needed for dashboard login.
+
+If you get some strange permissions error when login run this command:
+```
+kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
+```
+
+Now we have dashboard running on port 9090.
+
+if we want to deploy new docker image, we need to firstly add a login token for our private registry.
+
+```
+ kubectl create secret docker-registry mydockerkey --docker-server=https://dockerhub.ourdomain.com/v2/ --docker-username=username --docker-password=SecretPassword --docker-email=myemail --namespace=default
+```
+If we want we can use default namespace or create a new one for the images:
+```
+kubectl create -f https://k8s.io/examples/admin/namespace-dev.json
+```
+
+Let's now deploy our new docker from registry. Click Create on the right top side of the dashboard. Select 3 tab 'Create an App'
+
+Set the name, image path: http://registry.ourdomain.com/namespace/imagename:1
+The number 1 represents the tag of the image. To map a port from container to the world use Service 'external' map the port like: 30000 to target port: 80 and after clicking advance select the right image pull secret. This is the secret we created a couple of steps earlier.
+
+Click deploy and the image will be pulled down and deployed. Under the link deployments we can see all of the deployed images. If we want to can scale to many replicas and they will run under the load balancer. Under the link services, we can see our external port we have set. For some unknown reasons to me, use the second random generated port. If we want we can go to our newly created server. <masterIp>:<randomGeneratedPort>
+
+#### My docker image has no internet connectivity
+If you ssh to the image and has no external connectivity run command bellow:
+```
+sysctl net.bridge.bridge-nf-call-iptables=1
+```
+
+
+It think this is it for now. If you have any problems, contact meybe i will be able to solve them :) 
+
+
+This tutorial is for kubernetes 1.13.
+
 
