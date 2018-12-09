@@ -4,13 +4,13 @@ In this short guideline I will explain how to setup kubernetes with dashboard an
 
 ## Docker
 Docker is "container" technology. It helps you run virtual servers with preinstalled programs, configurations etc.
-On your computer you can run multi docker images with different OS in it. If you want you can forward ports from each contaner to your externa port. In this example I will show you how to expose docker port 80(nginx) to external custom port.
+On your computer you can run multi docker images with different OS on it. If you want you can forward ports from each contaner to your external port. In this example I will show you how to expose docker port 80(nginx) to external custom port.
 
 ### Registry
-If we want to install ubuntu in docker container we need to give him a path to the repository where to download the image. if we have our cusotm code in it or some private configuration we can but private registry on https://hub.docker.com/ or install our private one.
+If we want to install ubuntu in docker container we need to give him a path to the repository where to download the image. if we have our custom code in it or some private configuration we can deploy on private registry https://hub.docker.com/ or install our private one.
 
 ### Installation
-In this tutorial all OS will be running ubuntu 18.04. 
+In this tutorial I will be running ubuntu 18.04. 
 First we install OS to one of our servers. Than we need to install docker to run registry
 ```
 $ apt-get update && apt-get install -y apt-transport-https
@@ -20,7 +20,7 @@ $ apt update && apt install -qy docker-ce
 ```
 
 #### Running on https
-If we want to have registry on HTTPS install create registry.key and registry.crt file.
+If we want to have registry on HTTPS create registry.key and registry.crt file.
 Node: for key you have to have full chain certificate: 
 ```
 cat cert.crt interm.crt > registry.crt
@@ -50,14 +50,14 @@ sudo docker run -d \
   registry:2
 ```
 
-This will download the image map all drives and started the image.
+This will download the image, map all the drives and start the image.
 To check the results run:
 ```
 sudo docker ps -a
 ```
 
 ### Registry frontend
-Ofcourse we can't see if everything is ok wo if you want you can setup frontend to see what is happening. 
+My advice is to install the dashboard for the registry to see what is happening.
 I used  konradkleine/docker-registry-frontend:v2 It's good enough for me
 ```
 sudo docker run \
@@ -74,12 +74,12 @@ sudo docker run \
   konradkleine/docker-registry-frontend:v2
 ```
 
-At this point we can push the docker images to the registry. If you use the command line to create&push the image you could have get some error because of the authorization.
+At this point we can push the docker images to the registry. If you use the command line to create&push the image you could get some errors because of the authorization.
 To login in private registry use:
 ```
 docker login dockerhub.mypage.com
 ```
-My running the command above you will need to insert username/password for the page. 
+By running the command above you will need to insert username/password for the registry. 
 
 Some docker comamnds:
 ```
@@ -132,7 +132,7 @@ What it does:
  - Copy data from working directory to /var/www in docker
  - run php composer
  - start all service and keep it running (tail -f /dev/null)
-   - In kubernetes the worker just shutted down my node because it thought it's done with it.  
+   - In kubernetes, the worker just shutted down my node because it thought it's done with it.  
 
 
 If you want build the image use:
@@ -149,19 +149,19 @@ And to run it with mapping port 80 to my 80 port.
 ```
 docker run -i  -p 80:80 -i -t mysuperimage:1 /bin/bash
 ```
-If you want to can map you own directory to docker:
+If you want you can map you own directory to docker:
 ```
  docker run --rm -v c:/work/data:/var/www/ -i  -p 80:80 -i -t dockerhub.superdomain.com/mysuperimage:1 /bin/bash 
 ```
 
-Note: If you are running windows there could be some problem if you are using Azure AD.
+Note: If you are running windows there could be some problems if you are using Azure AD.
 Folow this to fix this: https://tomssl.com/2018/01/11/sharing-your-c-drive-with-docker-for-windows-when-using-azure-active-directory-azuread-aad/
 basicly you need local account for it.
 
 
 ## Install kubernetes
-Soo finaly the kubernetes. On simple solution to give you a headache. Kubernetes is a "docker image for controlling other dockers". Not. But Yes. It has one master server who is connected to multiple nodees which are running different docker images. 
-Let's first install docker master. 
+Soo finaly the kubernetes. One simple solution to give you a headache. Kubernetes is a "docker image for controlling other dockers". Not. But Yes. It has one master server who is connected to multiple nodes which are running different docker images. 
+Let's first install docker on master server. 
 ```
 sudo apt-get update && apt-get install -y apt-transport-https
 sudo curl -s https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -175,11 +175,11 @@ sudo apt-get update && apt-get install -y kubeadm kubelet kubectl
 
 You need to install this kubeadm/kubelet and kubectl on every node you want to have. But for now you don't need this. You can install it later.
 
-To create the master for the kubernetes run command like this:
+To create the master for the kubernetes run the following command:
 ```
 sudo kubeadm init --apiserver-advertise-address=192.168.5.135
 ```
-For apiserver pust your IP of the server. After a while you will get join command. Please copy it to somewhere or if you lose it run this command to print it again:
+For apiserver put your IP of the server. After a while you will get join command. Please copy it to somewhere or if you lose it run this command to print it again:
 ```
 kubeadm token create --print-join-command
 ```
@@ -203,7 +203,7 @@ To check the valid nodes run command bellow on a master server:
 kubectl get nodes
 ```
 
-By now you should see master server and other nodes but the status should be NotReady. To connect all the nodes together you need to install a network plugin. There's a giant list of all avaiable plugin but in this tutorial we will use Weave Net.
+By now you should see master server and other nodes but the status should be NotReady. To connect all the nodes together you need to install a network plugin. There's a giant list of all available plugins but in this tutorial we will use Weave Net.
 
 To install it run the command on master:
 ```
@@ -218,7 +218,7 @@ We have kubernetes, the nodes, registry but we can't see what have we done. In o
 kubectl apply -f kubernetes-dashboard.yaml
 ```
 
-To check if installation works run following command:
+To check if installation worked run following command:
 ```
 kubectl get pods --all-namespaces
 or
@@ -231,7 +231,7 @@ http://<masterIP>:9090
 ```
 
 #### Dashboard login
-If you check the yaml file you will see the flag --disable-skip=true by default you can use skip login and go directly to dashboard. For security reasons we have disabled this.
+If you check the yaml file you will see the flag --disable-skip=true by default you can use skip login button and go directly to dashboard. For security reasons we have disabled this.
 
 To login via token run command bellow on master server:
 ```
@@ -243,14 +243,14 @@ kubectl -n kube-system describe secret <dashboardName>
 ```
 You fill see the token string. This token is needed for dashboard login.
 
-If you get some strange permissions error when login run this command:
+If you get some strange permissions errors when login run this command:
 ```
 kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
 ```
 
 Now we have dashboard running on port 9090.
 
-if we want to deploy new docker image, we need to firstly add a login token for our private registry.
+If we want to deploy new docker image, we need to firstly add a login token for our private registry.
 
 ```
  kubectl create secret docker-registry mydockerkey --docker-server=https://dockerhub.ourdomain.com/v2/ --docker-username=username --docker-password=SecretPassword --docker-email=myemail --namespace=default
@@ -260,12 +260,12 @@ If we want we can use default namespace or create a new one for the images:
 kubectl create -f https://k8s.io/examples/admin/namespace-dev.json
 ```
 
-Let's now deploy our new docker from registry. Click Create on the right top side of the dashboard. Select 3 tab 'Create an App'
+Let's now deploy our new docker from registry. Click Create on the right top side of the dashboard. Select 3th tab 'Create an App'
 
 Set the name, image path: http://registry.ourdomain.com/namespace/imagename:1
-The number 1 represents the tag of the image. To map a port from container to the world use Service 'external' map the port like: 30000 to target port: 80 and after clicking advance select the right image pull secret. This is the secret we created a couple of steps earlier.
+The number 1 represents the tag of the image. To map a port from container to the world use Service: 'external'. Map the port like: 30000 to target port: 80 and after clicking advance select the right image pull secret. This is the secret we created a couple of steps earlier.
 
-Click deploy and the image will be pulled down and deployed. Under the link deployments we can see all of the deployed images. If we want to can scale to many replicas and they will run under the load balancer. Under the link services, we can see our external port we have set. For some unknown reasons to me, use the second random generated port. If we want we can go to our newly created server. <masterIp>:<randomGeneratedPort>
+Click deploy and the image will be pulled down and deployed. Under the link deployments we can see all of the deployed images. If we want you can scale to many replicas and they will run under the same load balancer. Under the link services, we can see our external port we have set. For some unknown reasons to me, use the second random generated port. Server is available via: <masterIp>:<randomGeneratedPort>
 
 #### My docker image has no internet connectivity
 If you ssh to the image and has no external connectivity run command bellow:
@@ -274,7 +274,7 @@ sysctl net.bridge.bridge-nf-call-iptables=1
 ```
 
 
-It think this is it for now. If you have any problems, contact meybe i will be able to solve them :) 
+It think this is it for now. If you have any problems, contact maybe I will be able to solve them :) 
 
 
 This tutorial is for kubernetes 1.13.
